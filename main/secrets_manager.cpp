@@ -7,6 +7,7 @@
 #include <cJSON.h>
 #include <esp_log.h>
 #include <esp_timer.h>
+#include <mbedtls/sha256.h>
 #include <nvs.h>
 #include <nvs_flash.h>
 
@@ -33,6 +34,7 @@ int SecretsManager::Init()
     m_ready = (m_deviceCount > 0);
     ESP_LOGI(M_TAG, "Loaded from NVS: version=%u count=%u ready=%d",
              m_version, static_cast<unsigned>(m_deviceCount), m_ready);
+    deriveAllAddresses();
   } else {
     ESP_LOGI(M_TAG, "No cached secrets — will request on connect");
   }
@@ -152,9 +154,7 @@ bool SecretsManager::handleRes(const char* data, std::size_t dataLen)
   ESP_LOGI(M_TAG, "res: applied version=%u count=%u", m_version,
            static_cast<unsigned>(m_deviceCount));
 
-  for (std::size_t i = 0; i < m_deviceCount; ++i) {
-    ESP_LOGI(M_TAG, "  [%u] %s", static_cast<unsigned>(i), m_devices[i].serial);
-  }
+  deriveAllAddresses();
 
   int err { saveToNvs() };
   if (err != 0) {
@@ -240,6 +240,38 @@ int SecretsManager::saveToNvs()
   err = nvs_commit(handle);
   nvs_close(handle);
   return err;
+}
+
+int SecretsManager::DeriveAddress(const uint8_t* secret, BleAddress* out)
+{
+  if (secret == nullptr || out == nullptr) { return -1; }
+
+  uint8_t hash[32];
+  int err { mbedtls_sha256(secret, 32, hash, 0) };  // 0 = SHA-256, not SHA-224.
+  if (err != 0) { return err; }
+
+  // Little-endian layout: hash[0] is LSB (printed last), hash[5] is MSB.
+  for (int i = 0; i < 6; ++i) {
+    out->addr[i] = hash[i];
+  }
+  // Static-random marker: top two bits of the MSB must be 0b11.
+  out->addr[5] = (out->addr[5] & 0x3F) | 0xC0;
+  return 0;
+}
+
+void SecretsManager::deriveAllAddresses()
+{
+  for (std::size_t i = 0; i < m_deviceCount; ++i) {
+    if (DeriveAddress(m_devices[i].secret, &m_addresses[i]) != 0) {
+      ESP_LOGE(M_TAG, "deriveAddress failed for %s!", m_devices[i].serial);
+      // Zero the address so downstream code can't accidentally use stale bytes.
+      std::memset(&m_addresses[i], 0, sizeof(m_addresses[i]));
+      continue;
+    }
+    const uint8_t* a { m_addresses[i].addr };
+    ESP_LOGI(M_TAG, "  %s -> %02X:%02X:%02X:%02X:%02X:%02X (static-random)",
+             m_devices[i].serial, a[5], a[4], a[3], a[2], a[1], a[0]);
+  }
 }
 
 bool SecretsManager::hexDecode(const char* hex, std::size_t hexLen, uint8_t* out, std::size_t outLen)

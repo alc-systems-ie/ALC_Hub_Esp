@@ -17,4 +17,5 @@ idf_component_register(
         esp-tls
         lwip
         json
+        mbedtls
 )

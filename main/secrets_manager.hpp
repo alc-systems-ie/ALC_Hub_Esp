@@ -20,6 +20,12 @@ struct BleDeviceSecret
   uint8_t secret[32];   // 256-bit key (hex-decoded from payload).
 };
 
+// Bluetooth static-random device address, little-endian (addr[0] = LSB, addr[5] = MSB).
+struct BleAddress
+{
+  uint8_t addr[6];
+};
+
 class SecretsManager
 {
 public:
@@ -41,6 +47,17 @@ public:
   {
     return (i < m_deviceCount) ? &m_devices[i] : nullptr;
   }
+  const BleAddress* GetAddress(std::size_t i) const
+  {
+    return (i < m_deviceCount) ? &m_addresses[i] : nullptr;
+  }
+
+  // Derive a BLE static-random address from a 32-byte secret:
+  // SHA-256(secret)[0..5], with top two bits of MSB (addr[5]) forced to 0b11
+  // per Bluetooth Core Spec. Peripheral uses the same derivation so the hub
+  // can add the address to the Filter Accept List without prior advertisement.
+  // Returns 0 on success, negative mbedtls error on failure.
+  static int DeriveAddress(const uint8_t* secret, BleAddress* out);
 
 private:
   static constexpr const char* M_NVS_NAMESPACE { "alc" };
@@ -56,9 +73,11 @@ private:
   bool handleVer(const char* data, std::size_t dataLen);
   bool handleRes(const char* data, std::size_t dataLen);
   int sendRequest();
+  void deriveAllAddresses();
   static bool hexDecode(const char* hex, std::size_t hexLen, uint8_t* out, std::size_t outLen);
 
   BleDeviceSecret m_devices[M_MAX_DEVICES] {};
+  BleAddress m_addresses[M_MAX_DEVICES] {};
   std::size_t m_deviceCount { 0 };
   uint8_t m_version { 0 };
   bool m_ready { false };
