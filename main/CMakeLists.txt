@@ -1,0 +1,17 @@
+idf_component_register(
+    SRCS
+        "main.cpp"
+        "wifi_sta.cpp"
+        "mqtt_client.cpp"
+        "time_sync.cpp"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        esp_wifi
+        esp_event
+        esp_netif
+        nvs_flash
+        mqtt
+        esp-tls
+        lwip
+)

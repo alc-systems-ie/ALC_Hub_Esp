@@ -1,0 +1,25 @@
+menu "ALC Hub"
+
+config ALC_HUB_SERIAL
+    string "Hub device serial (MQTT client id / username)"
+    default "HUB-MMYY-Wnnn"
+    help
+        Serial format: HUB-MMYY-Wnnn. Used as MQTT client ID and username.
+
+config ALC_HUB_SECRET
+    string "Hub device secret (MQTT password)"
+    default "0000000000000000000000000000000000000000000000000000000000000000"
+
+config ALC_WIFI_SSID
+    string "WiFi SSID"
+    default "your-ssid"
+
+config ALC_WIFI_PASSWORD
+    string "WiFi password"
+    default "your-password"
+
+config ALC_MQTT_BROKER_URI
+    string "MQTT broker URI"
+    default "mqtts://mqtt1.alc-carefree.com:8883"
+
+endmenu

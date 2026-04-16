@@ -1,0 +1,19 @@
+# ESP-IDF build artefacts
+build/
+build_*/
+sdkconfig
+sdkconfig.old
+
+# Secrets — committed as .template only
+credentials.sdkconfig
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Compile database
+compile_commands.json
+
+# clangd cache
+.cache/

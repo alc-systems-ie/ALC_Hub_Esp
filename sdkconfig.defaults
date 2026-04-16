@@ -1,0 +1,45 @@
+# Committed defaults — do NOT put secrets here.
+# Device credentials go in credentials.sdkconfig (gitignored).
+#
+# Build with:
+#   source $IDF_PATH/export.sh
+#   idf.py -D SDKCONFIG_DEFAULTS='sdkconfig.defaults;credentials.sdkconfig' set-target esp32c6
+#   idf.py -D SDKCONFIG_DEFAULTS='sdkconfig.defaults;credentials.sdkconfig' build flash monitor
+
+# --- C++ ---
+CONFIG_COMPILER_CXX_EXCEPTIONS=n
+CONFIG_COMPILER_CXX_RTTI=n
+
+# --- FreeRTOS / main task ---
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# --- Log ---
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_LOG_COLORS=y
+
+# --- WiFi (station) ---
+CONFIG_ESP_WIFI_ENABLE_WPA3_SAE=y
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=16
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=32
+
+# --- LwIP ---
+CONFIG_LWIP_SO_REUSE=y
+
+# --- SNTP ---
+CONFIG_LWIP_SNTP_MAX_SERVERS=2
+
+# --- MQTT ---
+CONFIG_MQTT_TRANSPORT_SSL=y
+CONFIG_MQTT_PROTOCOL_311=y
+CONFIG_MQTT_USE_CUSTOM_CONFIG=y
+
+# --- mbedTLS: ISRG Root X1 is 4096-bit RSA ---
+CONFIG_MBEDTLS_RSA_C=y
+CONFIG_MBEDTLS_HARDWARE_AES=y
+CONFIG_MBEDTLS_HARDWARE_SHA=y
+
+# --- NVS ---
+CONFIG_NVS_ENCRYPTION=n
+
+# --- Partition table — enlarge single app to 1.5 MB for headroom ---
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
