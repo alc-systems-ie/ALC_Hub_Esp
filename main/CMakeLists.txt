@@ -5,6 +5,9 @@ idf_component_register(
         "mqtt_client.cpp"
         "time_sync.cpp"
         "secrets_manager.cpp"
+        "uart_frame.cpp"
+        "coproc_link.cpp"
+        "peripheral_handler.cpp"
     INCLUDE_DIRS
         "."
     REQUIRES
@@ -18,4 +21,5 @@ idf_component_register(
         lwip
         json
         mbedtls
+        driver
 )

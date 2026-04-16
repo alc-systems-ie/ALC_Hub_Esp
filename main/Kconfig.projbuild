@@ -22,4 +22,24 @@ config ALC_MQTT_BROKER_URI
     string "MQTT broker URI"
     default "mqtts://mqtt1.alc-carefree.com:8883"
 
+config ALC_COPROC_UART_BAUD
+    int "BLE coprocessor UART baud rate"
+    default 1000000
+
+config ALC_COPROC_UART_TX_PIN
+    int "BLE coprocessor UART TX pin (GPIO)"
+    default 4
+
+config ALC_COPROC_UART_RX_PIN
+    int "BLE coprocessor UART RX pin (GPIO)"
+    default 5
+
+config ALC_COPROC_UART_RTS_PIN
+    int "BLE coprocessor UART RTS pin (GPIO)"
+    default 6
+
+config ALC_COPROC_UART_CTS_PIN
+    int "BLE coprocessor UART CTS pin (GPIO)"
+    default 7
+
 endmenu

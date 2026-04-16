@@ -156,6 +156,8 @@ bool SecretsManager::handleRes(const char* data, std::size_t dataLen)
 
   deriveAllAddresses();
 
+  if (m_tableChangedCb != nullptr) { m_tableChangedCb(); }
+
   int err { saveToNvs() };
   if (err != 0) {
     ESP_LOGE(M_TAG, "NVS save failed: %d!", err);

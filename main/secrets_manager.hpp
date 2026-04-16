@@ -66,6 +66,11 @@ private:
   static constexpr const char* M_NVS_KEY_COUNT { "sec_cnt" };
   static constexpr uint32_t M_MIN_REQ_INTERVAL_MS { 30000 };
 
+  using TableChangedCallback = void (*)();
+public:
+  void SetTableChangedCallback(TableChangedCallback cb) { m_tableChangedCb = cb; }
+private:
+
   SecretsManager() = default;
 
   int loadFromNvs();
@@ -82,6 +87,7 @@ private:
   uint8_t m_version { 0 };
   bool m_ready { false };
   int64_t m_lastRequestMs { 0 };
+  TableChangedCallback m_tableChangedCb { nullptr };
 };
 
 }  // namespace alc

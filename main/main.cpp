@@ -6,6 +6,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include "coproc_link.hpp"
 #include "mqtt_client.hpp"
 #include "secrets_manager.hpp"
 #include "time_sync.hpp"
@@ -56,6 +57,7 @@ extern "C" void app_main()
   auto& mqtt { alc::MqttClient::Instance() };
   auto& timeSync { alc::TimeSync::Instance() };
   auto& secrets { alc::SecretsManager::Instance() };
+  auto& coproc { alc::CoprocLink::Instance() };
 
   wifi.SetCallback([](bool connected) {
     if (connected) {
@@ -76,11 +78,28 @@ extern "C" void app_main()
     alc::SecretsManager::Instance().OnMqttMessage(topic, topicLen, data, dataLen);
   });
 
+  // When the coprocessor announces ready, push the current FAL (if we already
+  // have secrets) — covers the case of coproc reboot after the hub is up.
+  coproc.SetReadyCallback([]() {
+    if (alc::SecretsManager::Instance().IsReady()) {
+      alc::CoprocLink::Instance().SendFalTable();
+    }
+  });
+
+  // Whenever the secrets table is applied or updated, push it to the coproc
+  // (no-op if the coproc isn't ready yet — it'll pull via the ReadyCallback).
+  secrets.SetTableChangedCallback([]() {
+    if (alc::CoprocLink::Instance().IsReady()) {
+      alc::CoprocLink::Instance().SendFalTable();
+    }
+  });
+
   // WiFi init must run first — it brings up esp_netif and the LwIP tcpip thread,
   // which SNTP's operating-mode / server APIs require.
   ESP_ERROR_CHECK(wifi.Init());
   timeSync.Init();
   secrets.Init();
+  ESP_ERROR_CHECK(coproc.Init());
   ESP_ERROR_CHECK(mqtt.Init(CONFIG_ALC_MQTT_BROKER_URI,
                             CONFIG_ALC_HUB_SERIAL,
                             CONFIG_ALC_HUB_SECRET));
