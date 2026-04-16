@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 namespace alc {
@@ -10,15 +11,20 @@ class MqttClient
 {
 public:
   using ConnectedCallback = void (*)(bool connected);
+  using DataCallback = void (*)(const char* topic, std::size_t topicLen,
+                                const char* data, std::size_t dataLen);
 
   static MqttClient& Instance();
 
   int Init(const char* brokerUri, const char* serial, const char* secret);
   int Start();
   int Publish(const char* topicSuffix, const char* payload, int qos = 1, bool retain = false);
+  int Subscribe(const char* topicSuffix, int qos = 1);
 
+  const char* GetSerial() const { return m_serial; }
   bool IsConnected() const { return m_connected; }
   void SetCallback(ConnectedCallback cb) { m_cb = cb; }
+  void SetDataCallback(DataCallback cb) { m_dataCb = cb; }
 
 private:
   MqttClient() = default;
@@ -29,6 +35,7 @@ private:
   const char* m_serial { nullptr };
   bool m_connected { false };
   ConnectedCallback m_cb { nullptr };
+  DataCallback m_dataCb { nullptr };
 };
 
 }  // namespace alc

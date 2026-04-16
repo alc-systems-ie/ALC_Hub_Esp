@@ -4,14 +4,17 @@ idf_component_register(
         "wifi_sta.cpp"
         "mqtt_client.cpp"
         "time_sync.cpp"
+        "secrets_manager.cpp"
     INCLUDE_DIRS
         "."
     REQUIRES
         esp_wifi
         esp_event
         esp_netif
+        esp_timer
         nvs_flash
         mqtt
         esp-tls
         lwip
+        json
 )

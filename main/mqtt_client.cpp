@@ -88,6 +88,23 @@ int MqttClient::Publish(const char* topicSuffix, const char* payload, int qos, b
   return msgId;
 }
 
+int MqttClient::Subscribe(const char* topicSuffix, int qos)
+{
+  if (!m_connected || m_client == nullptr) { return -1; }
+
+  char topic[M_TOPIC_LEN];
+  std::snprintf(topic, sizeof(topic), "alc/%s/%s", m_serial, topicSuffix);
+
+  int msgId { esp_mqtt_client_subscribe(static_cast<esp_mqtt_client_handle_t>(m_client),
+                                        topic, qos) };
+  if (msgId < 0) {
+    ESP_LOGE(M_TAG, "Subscribe failed on '%s'!", topic);
+  } else {
+    ESP_LOGI(M_TAG, "Subscribed to %s (qos=%d)", topic, qos);
+  }
+  return msgId;
+}
+
 void MqttClient::eventHandler(void* args, const char* base, int32_t id, void* data)
 {
   auto* self { static_cast<MqttClient*>(args) };
@@ -114,6 +131,22 @@ void MqttClient::eventHandler(void* args, const char* base, int32_t id, void* da
       ESP_LOGW(M_TAG, "DISCONNECTED");
       self->m_connected = false;
       if (self->m_cb) { self->m_cb(false); }
+      break;
+
+    case MQTT_EVENT_DATA:
+      // Single-message dispatch only — payloads larger than the rx buffer arrive
+      // chunked (current_data_offset != 0 or data_len != total_data_len) and are
+      // ignored here. Secrets blobs for <16 devices fit comfortably in the default
+      // MQTT buffer, so this simplification is safe.
+      if (event->current_data_offset == 0 && event->data_len == event->total_data_len) {
+        if (self->m_dataCb != nullptr) {
+          self->m_dataCb(event->topic, event->topic_len,
+                         event->data, event->data_len);
+        }
+      } else {
+        ESP_LOGW(M_TAG, "Chunked payload ignored (offset=%d len=%d total=%d)",
+                 event->current_data_offset, event->data_len, event->total_data_len);
+      }
       break;
 
     case MQTT_EVENT_ERROR:

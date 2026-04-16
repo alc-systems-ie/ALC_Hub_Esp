@@ -7,6 +7,7 @@
 #include <freertos/task.h>
 
 #include "mqtt_client.hpp"
+#include "secrets_manager.hpp"
 #include "time_sync.hpp"
 #include "wifi_sta.hpp"
 
@@ -54,6 +55,7 @@ extern "C" void app_main()
   auto& wifi { alc::WifiSta::Instance() };
   auto& mqtt { alc::MqttClient::Instance() };
   auto& timeSync { alc::TimeSync::Instance() };
+  auto& secrets { alc::SecretsManager::Instance() };
 
   wifi.SetCallback([](bool connected) {
     if (connected) {
@@ -63,10 +65,22 @@ extern "C" void app_main()
     }
   });
 
+  mqtt.SetCallback([](bool connected) {
+    if (connected) {
+      alc::SecretsManager::Instance().OnMqttConnected();
+    }
+  });
+
+  mqtt.SetDataCallback([](const char* topic, std::size_t topicLen,
+                          const char* data, std::size_t dataLen) {
+    alc::SecretsManager::Instance().OnMqttMessage(topic, topicLen, data, dataLen);
+  });
+
   // WiFi init must run first — it brings up esp_netif and the LwIP tcpip thread,
   // which SNTP's operating-mode / server APIs require.
   ESP_ERROR_CHECK(wifi.Init());
   timeSync.Init();
+  secrets.Init();
   ESP_ERROR_CHECK(mqtt.Init(CONFIG_ALC_MQTT_BROKER_URI,
                             CONFIG_ALC_HUB_SERIAL,
                             CONFIG_ALC_HUB_SECRET));
